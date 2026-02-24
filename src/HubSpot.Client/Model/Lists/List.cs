@@ -1,90 +1,120 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Text;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace HubSpot.Model.Lists
 {
-    public class List
+    public class HubSpotList
     {
-        [JsonProperty("parentId")]
-        public long ParentId { get; set; }
-
-        [JsonProperty("dynamic")]
-        public bool IsDynamic { get; set; }
-
-        [JsonProperty("metaData")]
-        public ContactListMetadata Metadata { get; set; }
+        [JsonProperty("listId")]
+        public string ListId { get; set; }
 
         [JsonProperty("name")]
         public string Name { get; set; }
 
-        [JsonProperty("portalId")]
-        public int PortalId { get; set; }
+        [JsonProperty("objectTypeId")]
+        public string ObjectTypeId { get; set; }
+
+        [JsonProperty("processingType")]
+        public string ProcessingType { get; set; }
 
         [JsonProperty("createdAt")]
         public DateTimeOffset CreatedAt { get; set; }
 
-        [JsonProperty("listId")]
-        public long ListId { get; set; }
-
         [JsonProperty("updatedAt")]
         public DateTimeOffset UpdatedAt { get; set; }
 
-        [JsonProperty("deleteable")]
-        public bool IsDeleteable { get; set; }
+        [JsonProperty("listVersion")]
+        public int ListVersion { get; set; }
 
-        [JsonProperty("filters")]
-        public IReadOnlyList<IReadOnlyList<Filter>> Filters { get; set; }
+        [JsonProperty("filterBranch")]
+        public object FilterBranch { get; set; }
+
+        [JsonProperty("additionalProperties")]
+        public IReadOnlyDictionary<string, string> AdditionalProperties { get; set; }
     }
 
-    public class ContactListMetadata
+    public class ListSearchRequest
     {
-        [JsonProperty("processing")]
-        [JsonConverter(typeof(StringEnumConverter))]
-        public ContactListStatus Processing { get; set; }
+        [JsonProperty("offset")]
+        public int Offset { get; set; }
 
-        [JsonProperty("size")]
-        public int Size { get; set; }
+        [JsonProperty("count")]
+        public int Count { get; set; } = 100;
 
-        [JsonProperty("error")]
-        public string Error { get; set; }
+        [JsonProperty("processingTypes")]
+        public IReadOnlyList<string> ProcessingTypes { get; set; }
 
-        [JsonProperty("lastProcessingStateChangeAt")]
-        public DateTimeOffset LastProcessingStateChangeAt { get; set; }
+        [JsonProperty("additionalProperties")]
+        public IReadOnlyList<string> AdditionalProperties { get; set; }
 
-        [JsonProperty("lastSizeChangeAt")]
-        public DateTimeOffset LastSizeChangeAt { get; set; }
+        [JsonProperty("query")]
+        public string Query { get; set; }
     }
 
-    public enum ContactListStatus
+    public class ListSearchResponse
     {
-        [EnumMember(Value = "DONE")] Done,
-        [EnumMember(Value = "REFRESHING")] Refreshing,
-        [EnumMember(Value = "INITIALIZING")] Initializing,
-        [EnumMember(Value = "PROCESSING")] Processing
+        [JsonProperty("lists")]
+        public IReadOnlyList<HubSpotList> Lists { get; set; }
+
+        [JsonProperty("offset")]
+        public int Offset { get; set; }
+
+        [JsonProperty("hasMore")]
+        public bool HasMore { get; set; }
+
+        [JsonProperty("total")]
+        public int Total { get; set; }
     }
 
-    public class Filter
+    public class ListMemberRecord
     {
-        [JsonProperty("checkPastVersions")]
-        public bool CheckPastVersions { get; set; }
+        [JsonProperty("recordId")]
+        public string RecordId { get; set; }
 
-        [JsonProperty("filterFamily")]
-        public string FilterFamily { get; set; }
+        [JsonProperty("membershipTimestamp")]
+        public DateTimeOffset MembershipTimestamp { get; set; }
+    }
 
-        [JsonProperty("type")]
-        public string Type { get; set; }
+    public class ListMembershipResponse
+    {
+        [JsonProperty("results")]
+        public IReadOnlyList<ListMemberRecord> Results { get; set; }
 
-        [JsonProperty("property")]
-        public string Property { get; set; }
+        [JsonProperty("total")]
+        public int Total { get; set; }
 
-        [JsonProperty("value")]
-        public string Value { get; set; }
+        [JsonProperty("paging")]
+        public ListPaging Paging { get; set; }
+    }
 
-        [JsonProperty("operator")]
-        public string Operator { get; set; }
+    public class ListPaging
+    {
+        [JsonProperty("next")]
+        public ListPagingNext Next { get; set; }
+    }
+
+    public class ListPagingNext
+    {
+        [JsonProperty("after")]
+        public string After { get; set; }
+    }
+
+    public class ListIdMapping
+    {
+        [JsonProperty("listId")]
+        public string ListId { get; set; }
+
+        [JsonProperty("legacyListId")]
+        public string LegacyListId { get; set; }
+    }
+
+    public class ListIdMappingBatchResponse
+    {
+        [JsonProperty("legacyListIdsToIdsMapping")]
+        public IReadOnlyList<ListIdMapping> Mappings { get; set; }
+
+        [JsonProperty("missingLegacyListIds")]
+        public IReadOnlyList<string> MissingLegacyListIds { get; set; }
     }
 }
