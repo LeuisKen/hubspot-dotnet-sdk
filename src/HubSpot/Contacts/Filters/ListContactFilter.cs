@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace HubSpot.Contacts.Filters
 
             if (recordIds.Count == 0)
             {
-                return new Model.Contacts.Contact[0];
+                return Array.Empty<Model.Contacts.Contact>();
             }
 
             var contacts = new List<Model.Contacts.Contact>();
@@ -32,7 +33,10 @@ namespace HubSpot.Contacts.Filters
             {
                 var batch = recordIds.Skip(i).Take(ContactBatchSize).ToList();
                 var batchResult = await client.Contacts.GetManyByIdAsync(batch, propertiesToQuery, PropertyMode.ValueOnly, FormSubmissionMode.None).ConfigureAwait(false);
-                contacts.AddRange(batchResult.Values);
+                if (batchResult?.Values != null)
+                {
+                    contacts.AddRange(batchResult.Values);
+                }
             }
 
             return contacts;

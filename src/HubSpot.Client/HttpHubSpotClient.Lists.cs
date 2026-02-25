@@ -39,6 +39,11 @@ namespace HubSpot
 
         async Task<HubSpotList> IHubSpotListClient.GetByIdAsync(string listId, bool includeFilters)
         {
+            if (string.IsNullOrEmpty(listId))
+            {
+                throw new ArgumentNullException(nameof(listId));
+            }
+
             var builder = new HttpQueryStringBuilder();
 
             if (includeFilters)
@@ -89,6 +94,11 @@ namespace HubSpot
 
         async Task IHubSpotListClient.UpdateNameAsync(string listId, string name)
         {
+            if (string.IsNullOrEmpty(listId))
+            {
+                throw new ArgumentNullException(nameof(listId));
+            }
+
             if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentNullException(nameof(name));
@@ -117,6 +127,11 @@ namespace HubSpot
 
         async Task IHubSpotListClient.DeleteAsync(string listId)
         {
+            if (string.IsNullOrEmpty(listId))
+            {
+                throw new ArgumentNullException(nameof(listId));
+            }
+
             await _client.DeleteAsync($"/crm/v3/lists/{listId}");
         }
 
