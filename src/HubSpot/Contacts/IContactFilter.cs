@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using HubSpot.Contacts.Filters;
 using HubSpot.Model;
@@ -27,7 +27,7 @@ namespace HubSpot.Contacts
 
         public static IContactFilter ByCompanyId(long companyId) => new CompanyContactFilter(companyId);
 
-        public static IContactFilter ByListId(long listId) => new ListContactFilter(listId);
+        public static IContactFilter ByListId(string listId) => new ListContactFilter(listId);
     }
 
     public static class FilterContactExtensions
@@ -53,7 +53,7 @@ namespace HubSpot.Contacts
         public static Task<IReadOnlyList<TContact>> FindAsync<TContact>(this IHubSpotContactConnector connector, string searchQuery) where TContact : Contact, new()
             => connector.FindAsync<TContact>(FilterContacts.Query(searchQuery));
 
-        public static Task<IReadOnlyList<TContact>> FindInListAsync<TContact>(this IHubSpotContactConnector connector, long listId) where TContact : Contact, new()
+        public static Task<IReadOnlyList<TContact>> FindInListAsync<TContact>(this IHubSpotContactConnector connector, string listId) where TContact : Contact, new()
             => connector.FindAsync<TContact>(FilterContacts.ByListId(listId));
     }
 }

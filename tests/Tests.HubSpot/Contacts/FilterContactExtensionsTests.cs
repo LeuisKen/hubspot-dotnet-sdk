@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using AutoFixture.NUnit3;
 using HubSpot.Contacts;
 using HubSpot.Contacts.Filters;
@@ -97,7 +97,7 @@ namespace Tests.Contacts {
         }
 
         [Test, CustomAutoData]
-        public async Task FindInListAsync_forwards_with_filter(Contact[] expected, long listId)
+        public async Task FindInListAsync_forwards_with_filter(Contact[] expected, string listId)
         {
             mockConnector.Setup(p => p.FindAsync<Contact>(It.IsAny<IContactFilter>()))
                          .ReturnsAsync(expected);

@@ -1,4 +1,4 @@
-﻿using AutoFixture.NUnit3;
+using AutoFixture.NUnit3;
 using HubSpot.Contacts;
 using HubSpot.Contacts.Filters;
 using NUnit.Framework;
@@ -51,7 +51,7 @@ namespace Tests.Contacts
         }
 
         [Test, CustomAutoData]
-        public void ByList_returns_proper_filter(long listId)
+        public void ByList_returns_proper_filter(string listId)
         {
             Assert.That(FilterContacts.ByListId(listId), Is.InstanceOf<ListContactFilter>());
         }

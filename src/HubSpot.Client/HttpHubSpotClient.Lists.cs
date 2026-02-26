@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
-using HubSpot.Model;
-using HubSpot.Model.Contacts;
 using HubSpot.Model.Lists;
 using Kralizek.Extensions.Http;
 
@@ -11,181 +8,209 @@ namespace HubSpot
 {
     public partial class HttpHubSpotClient : IHubSpotListClient
     {
-        async Task<List> IHubSpotListClient.CreateAsync(string name, bool dynamic, IReadOnlyList<IReadOnlyList<Filter>> filters)
+        async Task<HubSpotList> IHubSpotListClient.CreateAsync(string name, string objectTypeId, string processingType)
         {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (string.IsNullOrEmpty(objectTypeId))
+            {
+                throw new ArgumentNullException(nameof(objectTypeId));
+            }
+
+            if (string.IsNullOrEmpty(processingType))
+            {
+                throw new ArgumentNullException(nameof(processingType));
+            }
+
             var request = new
             {
                 name,
-                dynamic,
-                filters
+                objectTypeId,
+                processingType
             };
 
-            var response = await _client.PostAsync<object, List>("/contacts/v1/lists", request);
+            var response = await _client.PostAsync<object, HubSpotList>("/crm/v3/lists", request);
 
             return response;
         }
 
-        async Task<ListList> IHubSpotListClient.GetAllAsync(int count, long? offset)
+        async Task<HubSpotList> IHubSpotListClient.GetByIdAsync(string listId, bool includeFilters)
         {
-            if (count > 250)
+            if (string.IsNullOrEmpty(listId))
             {
-                throw new ArgumentOutOfRangeException(nameof(count), "Up to 250 lists can be requested at the same time");
+                throw new ArgumentNullException(nameof(listId));
             }
 
             var builder = new HttpQueryStringBuilder();
-            builder.Add("count", count);
-            builder.Add("offset", offset);
 
-            var response = await _client.GetAsync<ListList>("/contacts/v1/lists", builder.BuildQuery());
-
-            return response;
-        }
-
-        async Task<List> IHubSpotListClient.GetByIdAsync(long listId)
-        {
-            var response = await _client.GetAsync<List>($"/contacts/v1/lists/{listId}");
-
-            return response;
-        }
-
-        async Task<List> IHubSpotListClient.UpdateAsync(long listId, string name, bool? dynamic, IReadOnlyList<IReadOnlyList<Filter>> filters)
-        {
-            var request = new
+            if (includeFilters)
             {
-                name,
-                dynamic,
-                filters
-            };
+                builder.Add("includeFilters", "true");
+            }
 
-            var response = await _client.PostAsync<object, List>($"/contacts/v1/lists/{listId}", request);
+            var response = await _client.GetAsync<HubSpotList>($"/crm/v3/lists/{listId}", builder.BuildQuery());
 
             return response;
         }
 
-        async Task IHubSpotListClient.DeleteAsync(long listId)
-        {
-            await _client.DeleteAsync($"/contacts/v1/lists/{listId}");
-        }
-
-        async Task<ListList> IHubSpotListClient.GetManyByIdAsync(IReadOnlyList<long> listIds)
+        async Task<IReadOnlyList<HubSpotList>> IHubSpotListClient.GetManyByIdAsync(IReadOnlyList<string> listIds, bool includeFilters)
         {
             if (listIds == null || listIds.Count == 0)
             {
-                return ListList.Empty;
+                return Array.Empty<HubSpotList>();
             }
 
             var builder = new HttpQueryStringBuilder();
 
             foreach (var id in listIds)
             {
-                builder.Add("listId", id);
+                builder.Add("listIds", id);
             }
 
-            var response = await _client.GetAsync<ListList>("/contacts/v1/lists/batch", builder.BuildQuery());
+            if (includeFilters)
+            {
+                builder.Add("includeFilters", "true");
+            }
+
+            var response = await _client.GetAsync<ListSearchResponse>("/crm/v3/lists", builder.BuildQuery());
+
+            return response?.Lists ?? Array.Empty<HubSpotList>();
+        }
+
+        async Task<ListSearchResponse> IHubSpotListClient.SearchAsync(ListSearchRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var response = await _client.PostAsync<ListSearchRequest, ListSearchResponse>("/crm/v3/lists/search", request);
 
             return response;
         }
 
-        async Task<ListList> IHubSpotListClient.GetAllStaticAsync(int count, long? offset)
+        async Task IHubSpotListClient.UpdateNameAsync(string listId, string name)
         {
-            if (count > 250)
+            if (string.IsNullOrEmpty(listId))
             {
-                throw new ArgumentOutOfRangeException(nameof(count), "Up to 250 lists can be requested at the same time");
+                throw new ArgumentNullException(nameof(listId));
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name));
             }
 
             var builder = new HttpQueryStringBuilder();
-            builder.Add("count", count);
-            builder.Add("offset", offset);
+            builder.Add("listName", name);
 
-            var response = await _client.GetAsync<ListList>("/contacts/v1/lists/static", builder.BuildQuery());
-
-            return response;
+            await _client.PutAsync($"/crm/v3/lists/{listId}/update-list-name", query: builder.BuildQuery());
         }
 
-        async Task<ListList> IHubSpotListClient.GetAllDynamicAsync(int count, long? offset)
+        async Task IHubSpotListClient.UpdateFiltersAsync(string listId, object filterBranch)
         {
-            if (count > 250)
+            if (filterBranch == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), "Up to 250 lists can be requested at the same time");
+                throw new ArgumentNullException(nameof(filterBranch));
             }
 
-            var builder = new HttpQueryStringBuilder();
-            builder.Add("count", count);
-            builder.Add("offset", offset);
-
-            var response = await _client.GetAsync<ListList>("/contacts/v1/lists/dynamic", builder.BuildQuery());
-
-            return response;
-        }
-
-        async Task<ContactList> IHubSpotListClient.GetContactsInListAsync(long listId, IReadOnlyList<IProperty> properties, PropertyMode propertyMode, FormSubmissionMode formSubmissionMode, bool showListMemberships, int count, long? contactOffset)
-        {
-            if (count > 100)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), "Up to 100 contacts can be requested at the same time");
-            }
-
-            var builder = new HttpQueryStringBuilder();
-
-            builder.AddProperties(properties);
-            builder.AddPropertyMode(propertyMode);
-            builder.AddFormSubmissionMode(formSubmissionMode);
-            builder.AddShowListMemberships(showListMemberships);
-            builder.Add("count", count.ToString());
-            builder.Add("vidOffset", contactOffset);
-
-            var list = await _client.GetAsync<ContactList>($"/contacts/v1/lists/{listId}/contacts/all", builder.BuildQuery());
-
-            return list;
-        }
-
-        async Task<ContactList> IHubSpotListClient.GetContactsRecentlyAddedToListAsync(long listId, IReadOnlyList<IProperty> properties, PropertyMode propertyMode, FormSubmissionMode formSubmissionMode, bool showListMemberships, int count, long? contactOffset, DateTimeOffset? timeOffset)
-        {
-            if (count > 100)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), "Up to 100 contacts can be requested at the same time");
-            }
-
-            var builder = new HttpQueryStringBuilder();
-
-            builder.AddProperties(properties);
-            builder.AddPropertyMode(propertyMode);
-            builder.AddFormSubmissionMode(formSubmissionMode);
-            builder.AddShowListMemberships(showListMemberships);
-            builder.Add("count", count.ToString());
-            builder.Add("vidOffset", contactOffset);
-
-            if (timeOffset.HasValue)
-            {
-                builder.Add("timeOffset", timeOffset.Value.ToUnixTimeMilliseconds().ToString());
-            }
-
-            var list = await _client.GetAsync<ContactList>($"/contacts/v1/lists/{listId}/contacts/recent", builder.BuildQuery());
-
-            return list;
-        }
-
-        async Task<ContactListResponse> IHubSpotListClient.AddContactsToListAsync(long listId, IReadOnlyList<long> contactIds, IReadOnlyList<string> contactEmails)
-        {
             var request = new
             {
-                vids = contactIds,
-                emails = contactEmails
+                filterBranch
             };
 
-            var response = await _client.PostAsync<object, ContactListResponse>($"/contacts/v1/lists/{listId}/add", request);
+            await _client.PutAsync<object, object>($"/crm/v3/lists/{listId}/update-list-filters", request);
+        }
+
+        async Task IHubSpotListClient.DeleteAsync(string listId)
+        {
+            if (string.IsNullOrEmpty(listId))
+            {
+                throw new ArgumentNullException(nameof(listId));
+            }
+
+            await _client.DeleteAsync($"/crm/v3/lists/{listId}");
+        }
+
+        async Task<ListMembershipResponse> IHubSpotListClient.GetMembershipsAsync(string listId, string after, int? limit)
+        {
+            var builder = new HttpQueryStringBuilder();
+
+            if (after != null)
+            {
+                builder.Add("after", after);
+            }
+
+            if (limit.HasValue)
+            {
+                builder.Add("limit", limit.Value);
+            }
+
+            var response = await _client.GetAsync<ListMembershipResponse>($"/crm/v3/lists/{listId}/memberships", builder.BuildQuery());
 
             return response;
         }
 
-        async Task<ContactListResponse> IHubSpotListClient.RemoveContactFromListAsync(long listId, long contactId)
+        async Task<ListMembershipResponse> IHubSpotListClient.GetMembershipsByJoinOrderAsync(string listId, string after, int? limit)
         {
-            var request = new
-            {
-                vids = new[] { contactId }
-            };
+            var builder = new HttpQueryStringBuilder();
 
-            var response = await _client.PostAsync<object, ContactListResponse>($"/contacts/v1/lists/{listId}/remove", request);
+            if (after != null)
+            {
+                builder.Add("after", after);
+            }
+
+            if (limit.HasValue)
+            {
+                builder.Add("limit", limit.Value);
+            }
+
+            var response = await _client.GetAsync<ListMembershipResponse>($"/crm/v3/lists/{listId}/memberships/join-order", builder.BuildQuery());
+
+            return response;
+        }
+
+        async Task IHubSpotListClient.AddMembershipsAsync(string listId, IReadOnlyList<string> recordIds)
+        {
+            if (recordIds == null || recordIds.Count == 0)
+            {
+                throw new ArgumentException("At least one record ID is required", nameof(recordIds));
+            }
+
+            await _client.PutAsync<IReadOnlyList<string>, object>($"/crm/v3/lists/{listId}/memberships/add", recordIds);
+        }
+
+        async Task IHubSpotListClient.RemoveMembershipsAsync(string listId, IReadOnlyList<string> recordIds)
+        {
+            if (recordIds == null || recordIds.Count == 0)
+            {
+                throw new ArgumentException("At least one record ID is required", nameof(recordIds));
+            }
+
+            await _client.PutAsync<IReadOnlyList<string>, object>($"/crm/v3/lists/{listId}/memberships/remove", recordIds);
+        }
+
+        async Task<ListIdMapping> IHubSpotListClient.GetIdMappingAsync(string legacyListId)
+        {
+            var builder = new HttpQueryStringBuilder();
+            builder.Add("legacyListId", legacyListId);
+
+            var response = await _client.GetAsync<ListIdMapping>("/crm/v3/lists/idmapping", builder.BuildQuery());
+
+            return response;
+        }
+
+        async Task<ListIdMappingBatchResponse> IHubSpotListClient.GetIdMappingBatchAsync(IReadOnlyList<string> legacyListIds)
+        {
+            if (legacyListIds == null || legacyListIds.Count == 0)
+            {
+                throw new ArgumentException("At least one legacy list ID is required", nameof(legacyListIds));
+            }
+
+            var response = await _client.PostAsync<IReadOnlyList<string>, ListIdMappingBatchResponse>("/crm/v3/lists/idmapping", legacyListIds);
 
             return response;
         }

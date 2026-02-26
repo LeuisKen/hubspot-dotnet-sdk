@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -93,7 +93,7 @@ namespace HubSpot
                 return new Dictionary<long, Contact>();
             }
 
-            if (contactIds.Count >= 100)
+            if (contactIds.Count > 100)
             {
                 throw new ArgumentOutOfRangeException(nameof(contactIds), "Up to 100 contacts can be requested at the same time");
             }
